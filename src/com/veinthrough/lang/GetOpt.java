@@ -232,6 +232,13 @@ public class GetOpt {
     /** The true heart of getopt, whether used old way or new way:
      * returns one argument; call repeatedly until it returns DONE.
      * Side-effect: sets globals optarg, optind
+     * (1) Index >= argv.length, return DONE.
+     * <p>
+     * (2) Found non-argument non-option word in argv: end of options, return DONE.
+     * <p>
+     * (3) Handle argument, return handled argument.
+     * <p>
+     *
      * @param argv The input arguments
      * @return One option character each time called, or DONE after last.
      */
@@ -239,13 +246,9 @@ public class GetOpt {
         Debug.println("getopt",
             "optind=" + optind + ", argv.length="+argv.length);
 
-        if (optind >= (argv.length) || !argv[optind].startsWith("-")) {
+        // (1)Index >= argv.length
+        if (optind >= (argv.length)) {
             done = true;
-        }
-
-        // If we are finished (either now OR from before), bail.
-        // Do not collapse this into the "if" above
-        if (done) {
             return DONE;
         }
 
@@ -258,7 +261,13 @@ public class GetOpt {
         // then look it up in the list of valid args.
         String thisArg = argv[optind];
 
-        if (thisArg.startsWith("-")) {
+        //(2) Found non-argument non-option word in argv: end of options.
+        if (!thisArg.startsWith("-")) {
+            done= true;
+            ++optind;
+            return DONE;
+        //(3) Handle argument
+        } else {
             for (GetOptDesc option : options) {
                 if ((thisArg.length() == 2 &&
                         option.getArgLetter() == thisArg.charAt(1)) ||
@@ -276,16 +285,12 @@ public class GetOpt {
                     }
                     ++optind;
                     return option.getArgLetter();
+
                 }
             }
             // Began with "-" but not matched, so must be error.
             ++optind;
             return '?';
-        } else {
-            // Found non-argument non-option word in argv: end of options.
-            ++optind;
-            done = true;
-            return DONE;
         }
     }
 
@@ -293,5 +298,4 @@ public class GetOpt {
     public int getOptInd() {
         return optind;
     }
-
 }
